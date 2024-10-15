@@ -3,7 +3,7 @@ from rest_framework import filters, mixins, permissions, viewsets
 from rest_framework.pagination import LimitOffsetPagination
 
 from api.serializers import CommentSerializer, ReviewSerializer
-# from titles.models import Review, Title
+from titles.models import Review, Title
 
 
 # class PostViewSet(viewsets.ModelViewSet):
@@ -28,13 +28,21 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user, title_id=title)
 
 
-# class CommentViewSet(viewsets.ModelViewSet):
-#     serializer_class = CommentSerializer
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
 
-#     def get_queryset(self):
-#         post = get_object_or_404(Post, id=self.kwargs['post_id'])
-#         return post.comments.all()
+    def get_queryset(self):
+        review = get_object_or_404(
+            Review,
+            title_id=self.kwargs['title_id'],
+            id=self.kwargs['review_id'],
+        )
+        return review.comments.all()
 
-#     def perform_create(self, serializer):
-#         post = get_object_or_404(Post, id=self.kwargs['post_id'])
-#         serializer.save(author=self.request.user, post=post)
+    def perform_create(self, serializer):
+        review = get_object_or_404(
+            Review,
+            title_id=self.kwargs['title_id'],
+            id=self.kwargs['review_id'],
+        )
+        serializer.save(author=self.request.user, review=review)
