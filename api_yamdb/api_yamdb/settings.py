@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -17,6 +16,8 @@ ALLOWED_HOSTS = ['*']
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
+    'users.apps.UsersConfig',
+    'api.apps.ApiConfig',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
@@ -32,6 +33,16 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+SIMPLE_JWT = {
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
 
 ROOT_URLCONF = 'api_yamdb.urls'
 
@@ -51,6 +62,8 @@ TEMPLATES = [
         },
     },
 ]
+
+AUTH_USER_MODEL = 'users.User'
 
 WSGI_APPLICATION = 'api_yamdb.wsgi.application'
 
@@ -101,3 +114,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
+
+# Файловый EmailBackend для писем
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
