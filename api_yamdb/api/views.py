@@ -115,3 +115,6 @@ class TitleViewSet(viewsets.ModelViewSet):
         if self.action in ('create', 'update', 'partial_update'):
             return TitlePostPatchSerializer
         return TitleGetSerializer
+    
+#изменение
+
