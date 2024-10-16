@@ -1,21 +1,20 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
-from rest_framework import status, views, viewsets
 
 from django.shortcuts import get_object_or_404
-from rest_framework import filters, mixins, permissions, viewsets
-from rest_framework.pagination import LimitOffsetPagination
 
+from rest_framework import status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from users.models import User
 
+from users.models import User
 from .permissions import IsAdmin
 from .serializers import SignupSerializer, TokenSerializer, UserSerializer
-from titles.models import Review
+from titles.models import Review, Title
 from api.serializers import CommentSerializer, ReviewSerializer
+from api.permissions import IsAuthorOrReadOnly, ReadOnly, OwnerOrReadOnly
 
 
 class EmailConfirmationMixin:
@@ -103,8 +102,17 @@ class UserViewSet(EmailConfirmationMixin, viewsets.ModelViewSet):
         self.send_confirmation_code(user)
 
 
-class ReviewViewSet(viewsets.ModelViewSet):
+class BaseViewSet(viewsets.ModelViewSet):
+
+    def get_permissions(self):
+        if self.action == 'retrieve':
+            return (ReadOnly(),)
+        return super().get_permissions()
+
+
+class ReviewViewSet(BaseViewSet):
     serializer_class = ReviewSerializer
+    permission_classes = (OwnerOrReadOnly,)
 
     def get_queryset(self):
         titles_id = get_object_or_404(Title, id=self.kwargs['title_id'])
@@ -115,8 +123,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user, title_id=title)
 
 
-class CommentViewSet(viewsets.ModelViewSet):
+class CommentViewSet(BaseViewSet):
     serializer_class = CommentSerializer
+    permission_classes = (OwnerOrReadOnly,)
 
     def get_queryset(self):
         review = get_object_or_404(

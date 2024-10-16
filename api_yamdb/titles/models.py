@@ -1,5 +1,7 @@
 from django.db import models
+
 from .validators import valid_date
+from users.models import User
 
 
 class Category(models.Model):
@@ -31,7 +33,7 @@ class Genre(models.Model):
 class Title(models.Model):
     name = models.CharField('Имя произведения', max_length=256)
     year = models.SmallIntegerField('Год выпуска', validators=[valid_date])
-    description = models.CharField('Описание')
+    description = models.CharField('Описание', max_length=256)
     genre = models.ManyToManyField(Genre, related_name='titles',
                                    verbose_name='Жанр')
     category = models.ForeignKey(Category, related_name='titles',
@@ -50,18 +52,18 @@ class Title(models.Model):
 class Review(models.Model):
     """"Модель отзыва."""
     SCORE_CHOICES = [(i, str(i)) for i in range(1, 11)]
-    # title_id = models.ForeignKey(
-    #     Title,
-    #     on_delete=models.CASCADE,
-    #     verbose_name='Id Произведения',
-    # )
-    title_id = models.IntegerField()
-    # author = models.ForeignKey(
-    #     User,
-    #     on_delete=models.CASCADE,
-    #     verbose_name='Автор отзыва',
-    # )
-    author = models.IntegerField('Автор отзыва')
+    title_id = models.ForeignKey(
+        Title,
+        on_delete=models.CASCADE,
+        verbose_name='Id Произведения',
+    )
+    # title_id = models.IntegerField()
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор отзыва',
+    )
+    # author = models.IntegerField('Автор отзыва')
     text = models.TextField('Текст отзыва')
     score = models.IntegerField('Рейтинг', choices=SCORE_CHOICES)
     pub_date = models.DateTimeField(
@@ -77,12 +79,12 @@ class Review(models.Model):
 
 class Comment(models.Model):
     """"Модель комментария к отзыву."""
-    # author = models.ForeignKey(
-    #     User,
-    #     on_delete=models.CASCADE,
-    #     verbose_name='Автор публикации',
-    # )
-    author = models.IntegerField()
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор публикации',
+    )
+    # author = models.IntegerField()
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
