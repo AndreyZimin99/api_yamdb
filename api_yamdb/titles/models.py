@@ -1,4 +1,25 @@
 from django.db import models
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+
+class Title(models.Model):
+    name = models.TextField('Текст публикации')
+    year = models.IntegerField(
+        'Год выпуска',
+    )
+    description = models.TextField(
+        'Описание книги',
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+        default_related_name = 'Titles'
+
+    def __str__(self):
+        return self.name[:30]
 
 
 class Review(models.Model):
@@ -26,7 +47,7 @@ class Review(models.Model):
 
     def __str__(self):
         return f'{self.text}, {self.title_id}, {self.author}'
-    
+
 
 class Comment(models.Model):
     # author = models.ForeignKey(

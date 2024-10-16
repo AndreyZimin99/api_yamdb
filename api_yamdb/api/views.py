@@ -2,18 +2,15 @@ from django.shortcuts import get_object_or_404
 from rest_framework import filters, mixins, permissions, viewsets
 from rest_framework.pagination import LimitOffsetPagination
 
-from api.serializers import CommentSerializer, ReviewSerializer
+from api.serializers import (CommentSerializer, ReviewSerializer,
+                             TitleSerializer)
 from titles.models import Review, Title
 
 
-# class PostViewSet(viewsets.ModelViewSet):
-#     queryset = Post.objects.all()
-#     serializer_class = PostSerializer
-#     pagination_class = LimitOffsetPagination
-
-#     def perform_create(self, serializer):
-#         user = self.request.user
-#         serializer.save(author=user)
+class TitleViewSet(viewsets.ModelViewSet):
+    queryset = Title.objects.all()
+    serializer_class = TitleSerializer
+    pagination_class = LimitOffsetPagination
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
