@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser
+from django.core import validators
 from django.db import models
 
 
@@ -10,3 +11,11 @@ class User(AbstractUser):
         ('moderator', 'Moderator'),
         ('admin', 'Admin'),
     ], default='user')
+    username = models.CharField(
+        max_length=150,
+        unique=True,
+        validators=[validators.RegexValidator(r'^[\w.@+-]+$')]
+    )
+
+    def is_admin(self):
+        return self.role == 'admin' or self.is_staff or self.is_superuser
