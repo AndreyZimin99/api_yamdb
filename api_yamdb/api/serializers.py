@@ -4,34 +4,31 @@ from titles.models import Category, Genre, Title
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели User."""
-
-    def validate_role(self, value):
-        user = self.context['request'].user
-        if not user.is_staff and value != 'user':
-            raise serializers.ValidationError('У вас нет разрешения.')
-        return value
-
+    """Сериализатор пользователя."""
     class Meta:
         model = User
-        fields = (
-            'username', 'email', 'role', 'bio', 'first_name', 'last_name'
-        )
+        fields = ('username', 'email', 'first_name',
+                  'last_name', 'bio', 'role')
+        read_only_fields = ('role',)
+
+    def validate_role(self, value):
+        """Проверка роли пользователя."""
+        user = self.context['request'].user
+        if not user.is_admin() and value != user.role:
+            raise serializers.ValidationError('Вы не можете поменять роль')
+        return value
 
 
 class SignupSerializer(serializers.Serializer):
-    """Сериализатор для создания пользователя."""
+    """Сериализатор для регистрации пользователя."""
     email = serializers.EmailField()
     username = serializers.CharField(max_length=150)
 
-    def validate(self, data):
-        """Проверка уникальности username и email."""
-        if User.objects.filter(username=data['username']).exists():
-            raise serializers.ValidationError(
-                'Такое имя пользователя уже существует.')
-        if User.objects.filter(email=data['email']).exists():
-            raise serializers.ValidationError('Такой email уже существует')
-        return data
+    def validate_username(self, value):
+        """Проверка имени пользователя."""
+        if value.lower() == 'me':
+            raise serializers.ValidationError('Недопустимое имя пользователя')
+        return value
 
 
 class TokenSerializer(serializers.Serializer):

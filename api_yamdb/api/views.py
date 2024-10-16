@@ -1,6 +1,9 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from rest_framework import permissions, status, views, viewsets, mixins
+from rest_framework import status, views, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from users.models import User
@@ -10,36 +13,46 @@ from .serializers import (SignupSerializer, TokenSerializer, UserSerializer,
                           TitleGetSerializer, TitlePostPatchSerializer)
 from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
 from titles.models import Category, Genre, Title
+from .permissions import IsAdmin
+from .serializers import SignupSerializer, TokenSerializer, UserSerializer
 
 
-class SignupView(views.APIView):
-    """Регистрация пользователя."""
-
-    def post(self, request):
-        serializer = SignupSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        if serializer.validated_data['username'].lower() == 'me':
-            return Response(
-                {'username': 'Invalid username'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        user, created = User.objects.get_or_create(
-            username=serializer.validated_data['username'],
-            email=serializer.validated_data['email']
-        )
+class EmailConfirmationMixin:
+    """Миксин для отправки кода подтверждения на почту."""
+    @staticmethod
+    def send_confirmation_code(user):
         confirmation_code = default_token_generator.make_token(user)
         send_mail(
             'Код подтверждения',
             f'Ваш код подтверждения: {confirmation_code}',
-            'test@test.ru',
+            'noreply@yamdb.com',
             [user.email],
             fail_silently=False,
         )
+
+
+class SignupView(EmailConfirmationMixin, views.APIView):
+    """Класс для регистрации пользователя."""
+
+    def post(self, request):
+        serializer = SignupSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+        username = serializer.validated_data['username']
+
+        if User.objects.filter(email=email).exists():
+            return Response(
+                {'email': 'Этот email уже зарегистрирован'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user, _ = User.objects.get_or_create(username=username, email=email)
+        self.send_confirmation_code(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class TokenView(views.APIView):
-    """Получение токена."""
+    """Класс для получения токена."""
 
     def post(self, request):
         serializer = TokenSerializer(data=request.data)
@@ -53,28 +66,37 @@ class TokenView(views.APIView):
                 status=status.HTTP_200_OK
             )
         return Response(
-            {'confirmation_code': 'Invalid code'},
+            {'confirmation_code': 'Неверный код подтверждения'},
             status=status.HTTP_400_BAD_REQUEST
         )
 
 
-class UserViewSet(viewsets.ModelViewSet):
-    """Получение информации о пользователях."""
+class UserViewSet(EmailConfirmationMixin, viewsets.ModelViewSet):
+    """Класс для работы с пользователями."""
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdmin]
+    lookup_field = 'username'
 
-    def update(self, request, *args, **kwargs):
-        """Обновление профиля."""
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
+    def get_permissions(self):
+        if self.action == 'me':
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
+    @action(
+        detail=False,
+        methods=['get', 'patch'],
+    )
+    def me(self, request):
+        """Метод для изменения профиля."""
+        if request.method == 'GET':
+            return Response(self.get_serializer(request.user).data)
         serializer = self.get_serializer(
-            instance, data=request.data, partial=partial)
+            request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        if request.user != instance and not request.user.is_staff:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        self.perform_update(serializer)
+        serializer.save()
         return Response(serializer.data)
+
 
     def get_permissions(self):
         if self.action in [
@@ -117,4 +139,8 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitleGetSerializer
     
 #изменение
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        self.send_confirmation_code(user)
 
