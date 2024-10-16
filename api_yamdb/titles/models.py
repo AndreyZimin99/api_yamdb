@@ -1,28 +1,8 @@
 from django.db import models
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
-
-
-class Title(models.Model):
-    name = models.TextField('Текст публикации')
-    year = models.IntegerField(
-        'Год выпуска',
-    )
-    description = models.TextField(
-        'Описание книги',
-        null=True,
-        blank=True
-    )
-
-    class Meta:
-        default_related_name = 'Titles'
-
-    def __str__(self):
-        return self.name[:30]
 
 
 class Review(models.Model):
+    """"Модель отзыва."""
     SCORE_CHOICES = [(i, str(i)) for i in range(1, 11)]
     # title_id = models.ForeignKey(
     #     Title,
@@ -50,6 +30,7 @@ class Review(models.Model):
 
 
 class Comment(models.Model):
+    """"Модель комментария к отзыву."""
     # author = models.ForeignKey(
     #     User,
     #     on_delete=models.CASCADE,

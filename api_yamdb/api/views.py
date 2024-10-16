@@ -4,13 +4,7 @@ from rest_framework.pagination import LimitOffsetPagination
 
 from api.serializers import (CommentSerializer, ReviewSerializer,
                              TitleSerializer)
-from titles.models import Review, Title
-
-
-class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
-    serializer_class = TitleSerializer
-    pagination_class = LimitOffsetPagination
+from titles.models import Review
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
