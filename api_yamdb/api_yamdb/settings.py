@@ -14,6 +14,7 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'users.apps.UsersConfig',
     'api.apps.ApiConfig',
+    'titles.apps.ApiConfig',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
