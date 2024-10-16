@@ -1,11 +1,15 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
-from rest_framework import permissions, status, views, viewsets
+from rest_framework import permissions, status, views, viewsets, mixins
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from users.models import User
 
-from .serializers import SignupSerializer, TokenSerializer, UserSerializer
+from .serializers import (SignupSerializer, TokenSerializer, UserSerializer,
+                          CategorySerializer, GenreSeriallizer,
+                          TitleGetSerializer, TitlePostPatchSerializer)
+from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
+from titles.models import Category, Genre, Title
 
 
 class SignupView(views.APIView):
@@ -84,3 +88,30 @@ class UserViewSet(viewsets.ModelViewSet):
         if self.kwargs.get('username') == 'me':
             return self.request.user
         return super().get_object()
+
+
+class CategoryViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
+                      viewsets.GenericViewSet):
+    """Получение списка всех категорий"""
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+
+class GenreViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
+                   viewsets.GenericViewSet):
+    """Получение списка всех жанров"""
+    queryset = Genre.objects.all()
+    serializer_class = GenreSeriallizer
+    permissions_class = [IsAdminOrReadOnly]
+
+
+class TitleViewSet(viewsets.ModelViewSet):
+    """Получение списка всех произведений"""
+    queryset = Title.objects.all()
+    permissions_class = [IsAdminOrReadOnly]
+
+    def get_serializer_class(self):
+        if self.action in ('create', 'update', 'partial_update'):
+            return TitlePostPatchSerializer
+        return TitleGetSerializer
