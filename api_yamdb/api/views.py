@@ -11,9 +11,8 @@ from api.filters import TitleFilters
 from .serializers import (SignupSerializer, TokenSerializer, UserSerializer,
                           CategorySerializer, GenreSeriallizer,
                           TitleGetSerializer, TitlePostPatchSerializer)
-from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
+from .permissions import IsAdminOrReadOnly, IsAdmin
 from titles.models import Category, Genre, Title
-from .permissions import IsAdmin
 from .serializers import SignupSerializer, TokenSerializer, UserSerializer
 
 
