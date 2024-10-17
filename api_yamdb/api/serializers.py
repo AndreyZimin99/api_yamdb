@@ -62,9 +62,11 @@ class TitleGetSerializer(serializers.ModelSerializer):
 class TitlePostPatchSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(),
+        slug_field='slug'
     )
     genre = serializers.SlugRelatedField(
-        queryset=Genre.objects.all()
+        queryset=Genre.objects.all(),
+        slug_field='slug'
     )
 
     class Meta:
