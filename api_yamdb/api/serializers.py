@@ -1,6 +1,8 @@
+import re
+
 from rest_framework import serializers
-from users.models import User
 from titles.models import Category, Genre, Title
+from users.models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -21,13 +23,27 @@ class UserSerializer(serializers.ModelSerializer):
 
 class SignupSerializer(serializers.Serializer):
     """Сериализатор для регистрации пользователя."""
-    email = serializers.EmailField()
+    email = serializers.EmailField(max_length=254)
     username = serializers.CharField(max_length=150)
 
     def validate_username(self, value):
         """Проверка имени пользователя."""
         if value.lower() == 'me':
             raise serializers.ValidationError('Недопустимое имя пользователя')
+        if len(value) > 150:
+            raise serializers.ValidationError(
+                'Длина имени пользователя не должна превышать 150 символов')
+        if not re.match(r'^[\w.@+-]+$', value):
+            raise serializers.ValidationError(
+                'Имя пользователя содержит недопустимые символы')
+        return value
+
+    def validate_email(self, value):
+        """Проверка email."""
+        if len(value) > 254:
+            raise serializers.ValidationError(
+                'Длина email не должна превышать 254 символа')
+
         return value
 
 
