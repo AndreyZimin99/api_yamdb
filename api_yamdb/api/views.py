@@ -47,15 +47,29 @@ class SignupView(views.APIView):
         )
 
     def post(self, request):
+        """Обрабатывает регистрацию."""
         serializer = SignupSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data['email']
             username = serializer.validated_data['username']
 
+            existing_user = User.objects.filter(email=email).first()
+            if existing_user and existing_user.username != username:
+                return Response(
+                    {'email': 'Пользователь с такой почтой уже существует'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             user, created = User.objects.get_or_create(
                 username=username,
-                email=email
+                defaults={'email': email}
             )
+
+            if not created and user.email != email:
+                return Response(
+                    {'username': 'Пользователь с таким ником уже существует'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
             self.send_confirmation_code(user)
 
@@ -65,7 +79,8 @@ class SignupView(views.APIView):
                 # Если пользователь уже существует, отправляем код повторно
                 return Response(
                     {'message': 'Код подтверждения отправлен повторно'},
-                    status=status.HTTP_200_OK)
+                    status=status.HTTP_200_OK
+                )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -76,16 +91,27 @@ class TokenView(views.APIView):
     def post(self, request):
         serializer = TokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = User.objects.get(username=serializer.validated_data['username'])
-        if default_token_generator.check_token(
-                user, serializer.validated_data['confirmation_code']):
+
+        username = serializer.validated_data['username']
+        confirmation_code = serializer.validated_data['confirmation_code']
+
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'Пользователь не найден'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if default_token_generator.check_token(user, confirmation_code):
             refresh = RefreshToken.for_user(user)
             return Response(
                 {'token': str(refresh.access_token)},
                 status=status.HTTP_200_OK
             )
+
         return Response(
-            {'confirmation_code': 'Неверный код подтверждения'},
+            {'error': 'Неверный код подтверждения'},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -118,7 +144,9 @@ class UserViewSet(EmailConfirmationMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = serializer.save()
-        self.send_confirmation_code(user)
+        if (not self.request.user.is_authenticated
+                or not self.request.user.is_admin()):
+            self.send_confirmation_code(user)
 
 
 class CategoryViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
