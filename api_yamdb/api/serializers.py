@@ -36,21 +36,24 @@ class TokenSerializer(serializers.Serializer):
     confirmation_code = serializers.CharField()
     
 class CategorySerializer(serializers.ModelSerializer):
+    """Сериализатор для получения категории."""
     class Meta:
         model = Category
         fields = '__all__'
 
 
 class GenreSeriallizer(serializers.ModelSerializer):
+    """Сериализатор для получения жанров."""
     class Meta:
         model = Genre
         fields = '__all__'
 
 
 class TitleGetSerializer(serializers.ModelSerializer):
-    category = CategorySerializer()
-    genre = GenreSeriallizer()
-    # raiting
+    """Сериализатор для получения списка произведений."""
+    category = CategorySerializer(read_only=True)
+    genre = GenreSeriallizer(read_only=True)
+    raiting = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Title
@@ -58,13 +61,15 @@ class TitleGetSerializer(serializers.ModelSerializer):
 
 
 class TitlePostPatchSerializer(serializers.ModelSerializer):
+    """Сериализатор для добавления и обновления произведений."""
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(),
         slug_field='slug'
     )
     genre = serializers.SlugRelatedField(
         queryset=Genre.objects.all(),
-        slug_field='slug'
+        slug_field='slug',
+        many=True
     )
 
     class Meta:
