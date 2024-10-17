@@ -1,8 +1,7 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
-
 from django.shortcuts import get_object_or_404
-
+from rest_framework import permissions, status, views, viewsets, mixins
 from rest_framework import status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -11,11 +10,22 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import User
+
+from .serializers import (SignupSerializer, TokenSerializer, UserSerializer,
+                          CategorySerializer, GenreSeriallizer,
+                          TitleGetSerializer, TitlePostPatchSerializer)
+from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
+from titles.models import Category, Genre, Title
 from .permissions import IsAdmin
 from .serializers import SignupSerializer, TokenSerializer, UserSerializer
 from titles.models import Review, Title
 from api.serializers import CommentSerializer, ReviewSerializer
 from api.permissions import IsAuthorOrReadOnly, ReadOnly, OwnerOrReadOnly
+from .serializers import (SignupSerializer, TokenSerializer, UserSerializer,
+                          CategorySerializer, GenreSeriallizer,
+                          TitleGetSerializer, TitlePostPatchSerializer)
+from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
+from titles.models import Category, Genre, Title
 
 
 class EmailConfirmationMixin:
@@ -98,9 +108,53 @@ class UserViewSet(EmailConfirmationMixin, viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data)
 
+
+    def get_permissions(self):
+        if self.action in [
+                'list', 'create', 'destroy', 'update', 'partial_update']:
+            self.permission_classes = [permissions.IsAdminUser]
+        elif self.action == 'retrieve':
+            self.permission_classes = [permissions.IsAuthenticated]
+        return super().get_permissions()
+
+    def get_object(self):
+        if self.kwargs.get('username') == 'me':
+            return self.request.user
+        return super().get_object()
+
+
+class CategoryViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
+                      viewsets.GenericViewSet):
+    """Получение списка всех категорий"""
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+
+class GenreViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
+                   viewsets.GenericViewSet):
+    """Получение списка всех жанров"""
+    queryset = Genre.objects.all()
+    serializer_class = GenreSeriallizer
+    permissions_class = [IsAdminOrReadOnly]
+
+
+class TitleViewSet(viewsets.ModelViewSet):
+    """Получение списка всех произведений"""
+    queryset = Title.objects.all()
+    permissions_class = [IsAdminOrReadOnly]
+
+    def get_serializer_class(self):
+        if self.action in ('create', 'update', 'partial_update'):
+            return TitlePostPatchSerializer
+        return TitleGetSerializer
+    
+#изменение
+
     def perform_create(self, serializer):
         user = serializer.save()
         self.send_confirmation_code(user)
+
 
 
 # class BaseViewSet(viewsets.ModelViewSet):

@@ -1,8 +1,6 @@
 from rest_framework import serializers
 from users.models import User
-
-from titles.models import Comment, Review
-
+from titles.models import Category, Genre, Title, Comment, Review
 
 class UserSerializer(serializers.ModelSerializer):
     """Сериализатор пользователя."""
@@ -36,6 +34,42 @@ class TokenSerializer(serializers.Serializer):
     """Сериализатор для получения токена."""
     username = serializers.CharField(max_length=150)
     confirmation_code = serializers.CharField()
+    
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+
+
+class GenreSeriallizer(serializers.ModelSerializer):
+    class Meta:
+        model = Genre
+        fields = '__all__'
+
+
+class TitleGetSerializer(serializers.ModelSerializer):
+    category = CategorySerializer()
+    genre = GenreSeriallizer()
+    # raiting
+
+    class Meta:
+        model = Title
+        fields = '__all__'
+
+
+class TitlePostPatchSerializer(serializers.ModelSerializer):
+    category = serializers.SlugRelatedField(
+        queryset=Category.objects.all(),
+        slug_field='slug'
+    )
+    genre = serializers.SlugRelatedField(
+        queryset=Genre.objects.all(),
+        slug_field='slug'
+    )
+
+    class Meta:
+        model = Title
+        fields = '__all__'
 
 
 class ReviewSerializer(serializers.ModelSerializer):
