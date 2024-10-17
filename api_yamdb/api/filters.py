@@ -1,8 +1,9 @@
 from titles.models import Title
 
-from rest_framework import filters
+from django_filters import rest_framework as filters
 
-class TitleFilters(filters.Filterset):
+
+class TitleFilters(filters.FilterSet):
     category = filters.CharFilter(
         field_name='category__slug',
         lookup_expr='icontains'
