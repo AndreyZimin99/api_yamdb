@@ -45,7 +45,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        fields = '__all__'
+        exclude = ('title_id',)
         model = Review
         read_only_fields = ('title_id',)
 
@@ -57,6 +57,6 @@ class CommentSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        fields = '__all__'
+        exclude = ('review',)
         model = Comment
         read_only_fields = ('title_id', 'review')

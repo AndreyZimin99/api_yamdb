@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework import status, views, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -102,17 +103,18 @@ class UserViewSet(EmailConfirmationMixin, viewsets.ModelViewSet):
         self.send_confirmation_code(user)
 
 
-class BaseViewSet(viewsets.ModelViewSet):
+# class BaseViewSet(viewsets.ModelViewSet):
 
-    def get_permissions(self):
-        if self.action == 'retrieve':
-            return (ReadOnly(),)
-        return super().get_permissions()
+#     def get_permissions(self):
+#         if self.action == 'retrieve':
+#             return (ReadOnly(),)
+#         return super().get_permissions()
 
 
-class ReviewViewSet(BaseViewSet):
+class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = (OwnerOrReadOnly,)
+    pagination_class = PageNumberPagination
+    # permission_classes = (OwnerOrReadOnly,)
 
     def get_queryset(self):
         titles_id = get_object_or_404(Title, id=self.kwargs['title_id'])
@@ -123,9 +125,10 @@ class ReviewViewSet(BaseViewSet):
         serializer.save(author=self.request.user, title_id=title)
 
 
-class CommentViewSet(BaseViewSet):
+class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = (OwnerOrReadOnly,)
+    pagination_class = PageNumberPagination
+    # permission_classes = (OwnerOrReadOnly,)
 
     def get_queryset(self):
         review = get_object_or_404(
