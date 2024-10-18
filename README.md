@@ -37,6 +37,40 @@
 - **COMMENTS**: Управление комментариями к отзывам.
 - **USERS**: Управление пользователями.
 
+## Установка
+
+Чтобы развернуть проект на локальной машине, выполните следующие шаги:
+
+1. **Клонируйте репозиторий:**
+   ```bash
+   git clone https://github.com/AndreyZimin99/api_yamdb.git
+   cd api_yamdb
+   ```
+
+2. **Создайте и активируйте виртуальное окружение:**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # Для Linux/MacOS
+   venv\Scripts\activate  # Для Windows
+   ```
+
+3. **Установите зависимости:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Примените миграции:**
+   ```bash
+   python manage.py migrate
+   ```
+
+5. **Запустите сервер разработки:**
+   ```bash
+   python manage.py runserver
+   ```
+
+Теперь API доступен по адресу `http://127.0.0.1:8000/`.
+
 ## Примеры запросов
 
 ### Получение списка всех категорий
