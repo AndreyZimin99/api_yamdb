@@ -1,25 +1,26 @@
+from api.filters import TitleFilters
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
-from rest_framework import permissions, status, views, viewsets, mixins
-from rest_framework import status, views, viewsets
+from rest_framework import mixins, status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from users.models import User
-from api.filters import TitleFilters
-from .serializers import (SignupSerializer, TokenSerializer, UserSerializer,
-                          CategorySerializer, GenreSeriallizer,
-                          TitleGetSerializer, TitlePostPatchSerializer)
-from .permissions import IsAdminOrReadOnly, IsAdmin
 from titles.models import Category, Genre, Title
-from .serializers import SignupSerializer, TokenSerializer, UserSerializer
+from users.models import User
+
+from .permissions import IsAdmin, IsAdminOrReadOnly
+from .serializers import (CategorySerializer, GenreSeriallizer,
+                          SignupSerializer, TitleGetSerializer,
+                          TitlePostPatchSerializer, TokenSerializer,
+                          UserSerializer)
 
 
 class EmailConfirmationMixin:
     """Миксин для отправки кода подтверждения на почту."""
     @staticmethod
     def send_confirmation_code(user):
+        """Отправляет подтверждение."""
         confirmation_code = default_token_generator.make_token(user)
         send_mail(
             'Код подтверждения',
@@ -30,24 +31,58 @@ class EmailConfirmationMixin:
         )
 
 
-class SignupView(EmailConfirmationMixin, views.APIView):
+class SignupView(views.APIView):
     """Класс для регистрации пользователя."""
 
-    def post(self, request):
-        serializer = SignupSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data['email']
-        username = serializer.validated_data['username']
+    @staticmethod
+    def send_confirmation_code(user):
+        """Отправляет код подтверждения на email пользователя."""
+        confirmation_code = default_token_generator.make_token(user)
+        send_mail(
+            'Код подтверждения',
+            f'Ваш код подтверждения: {confirmation_code}',
+            'noreply@yamdb.com',
+            [user.email],
+            fail_silently=False,
+        )
 
-        if User.objects.filter(email=email).exists():
-            return Response(
-                {'email': 'Этот email уже зарегистрирован'},
-                status=status.HTTP_400_BAD_REQUEST
+    def post(self, request):
+        """Обрабатывает регистрацию."""
+        serializer = SignupSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            username = serializer.validated_data['username']
+
+            existing_user = User.objects.filter(email=email).first()
+            if existing_user and existing_user.username != username:
+                return Response(
+                    {'email': 'Пользователь с такой почтой уже существует'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            user, created = User.objects.get_or_create(
+                username=username,
+                defaults={'email': email}
             )
 
-        user, _ = User.objects.get_or_create(username=username, email=email)
-        self.send_confirmation_code(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            if not created and user.email != email:
+                return Response(
+                    {'username': 'Пользователь с таким ником уже существует'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            self.send_confirmation_code(user)
+
+            if created:
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                # Если пользователь уже существует, отправляем код повторно
+                return Response(
+                    {'message': 'Код подтверждения отправлен повторно'},
+                    status=status.HTTP_200_OK
+                )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TokenView(views.APIView):
@@ -56,16 +91,27 @@ class TokenView(views.APIView):
     def post(self, request):
         serializer = TokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = User.objects.get(username=serializer.validated_data['username'])
-        if default_token_generator.check_token(
-                user, serializer.validated_data['confirmation_code']):
+
+        username = serializer.validated_data['username']
+        confirmation_code = serializer.validated_data['confirmation_code']
+
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'Пользователь не найден'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if default_token_generator.check_token(user, confirmation_code):
             refresh = RefreshToken.for_user(user)
             return Response(
                 {'token': str(refresh.access_token)},
                 status=status.HTTP_200_OK
             )
+
         return Response(
-            {'confirmation_code': 'Неверный код подтверждения'},
+            {'error': 'Неверный код подтверждения'},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -95,10 +141,12 @@ class UserViewSet(EmailConfirmationMixin, viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
-    
+
     def perform_create(self, serializer):
         user = serializer.save()
-        self.send_confirmation_code(user)
+        if (not self.request.user.is_authenticated
+                or not self.request.user.is_admin()):
+            self.send_confirmation_code(user)
 
 
 class CategoryViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
