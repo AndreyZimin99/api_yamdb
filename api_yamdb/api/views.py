@@ -1,14 +1,16 @@
 from api.filters import TitleFilters
 from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import send_mail
 from rest_framework import mixins, status, views, viewsets
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from titles.models import Category, Genre, Title
 from users.models import User
 
+from .mixins import EmailConfirmationMixin
+from .pagination import UserPagination
 from .permissions import IsAdmin, IsAdminOrReadOnly
 from .serializers import (CategorySerializer, GenreSeriallizer,
                           SignupSerializer, TitleGetSerializer,
@@ -16,79 +18,54 @@ from .serializers import (CategorySerializer, GenreSeriallizer,
                           UserSerializer)
 
 
-class EmailConfirmationMixin:
-    """Миксин для отправки кода подтверждения на почту."""
-    @staticmethod
-    def send_confirmation_code(user):
-        """Отправляет подтверждение."""
-        confirmation_code = default_token_generator.make_token(user)
-        send_mail(
-            'Код подтверждения',
-            f'Ваш код подтверждения: {confirmation_code}',
-            'noreply@yamdb.com',
-            [user.email],
-            fail_silently=False,
-        )
-
-
-class SignupView(views.APIView):
+class SignupView(EmailConfirmationMixin, views.APIView):
     """Класс для регистрации пользователя."""
-
-    @staticmethod
-    def send_confirmation_code(user):
-        """Отправляет код подтверждения на email пользователя."""
-        confirmation_code = default_token_generator.make_token(user)
-        send_mail(
-            'Код подтверждения',
-            f'Ваш код подтверждения: {confirmation_code}',
-            'noreply@yamdb.com',
-            [user.email],
-            fail_silently=False,
-        )
 
     def post(self, request):
         """Обрабатывает регистрацию."""
         serializer = SignupSerializer(data=request.data)
-        if serializer.is_valid():
-            email = serializer.validated_data['email']
-            username = serializer.validated_data['username']
 
-            existing_user = User.objects.filter(email=email).first()
-            if existing_user and existing_user.username != username:
-                return Response(
-                    {'email': 'Пользователь с такой почтой уже существует'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+        if not serializer.is_valid():
+            return Response(serializer.errors,
+                            status=status.HTTP_400_BAD_REQUEST)
 
-            user, created = User.objects.get_or_create(
-                username=username,
-                defaults={'email': email}
+        email = serializer.validated_data['email']
+        username = serializer.validated_data['username']
+
+        existing_user = User.objects.filter(email=email).first()
+
+        if existing_user and existing_user.username != username:
+            return Response(
+                {'email': 'Пользователь с такой почтой уже существует'},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-            if not created and user.email != email:
-                return Response(
-                    {'username': 'Пользователь с таким ником уже существует'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+        user, created = User.objects.get_or_create(
+            username=username,
+            defaults={'email': email}
+        )
 
-            self.send_confirmation_code(user)
+        if not created and user.email != email:
+            return Response(
+                {'username': 'Пользователь с таким ником уже существует'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-            if created:
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            else:
-                # Если пользователь уже существует, отправляем код повторно
-                return Response(
-                    {'message': 'Код подтверждения отправлен повторно'},
-                    status=status.HTTP_200_OK
-                )
+        self.send_confirmation_code(user)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        response_data = (
+            serializer.data if created else
+            {'message': 'Код подтверждения отправлен повторно'}
+        )
+
+        return Response(response_data, status=status.HTTP_200_OK)
 
 
 class TokenView(views.APIView):
     """Класс для получения токена."""
 
     def post(self, request):
+        """Обрабатывает получение токена."""
         serializer = TokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -118,34 +95,45 @@ class TokenView(views.APIView):
 
 class UserViewSet(EmailConfirmationMixin, viewsets.ModelViewSet):
     """Класс для работы с пользователями."""
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAdmin]
     lookup_field = 'username'
+    pagination_class = UserPagination
+    filter_backends = [SearchFilter]
+    search_fields = ['username']
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_permissions(self):
         if self.action == 'me':
             return [IsAuthenticated()]
         return super().get_permissions()
 
-    @action(
-        detail=False,
-        methods=['get', 'patch'],
-    )
+    @action(detail=False, methods=['get', 'patch', 'delete'], url_path='me')
     def me(self, request):
-        """Метод для изменения профиля."""
+        """Получение или изменение данных текущего пользователя."""
         if request.method == 'GET':
-            return Response(self.get_serializer(request.user).data)
-        serializer = self.get_serializer(
-            request.user, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
+            user_data = self.get_serializer(request.user).data
+            return Response(user_data)
+
+        if request.method == 'PATCH':
+            serializer = self.get_serializer(
+                request.user, data=request.data, partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+
+        if request.method == 'DELETE':
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def perform_create(self, serializer):
         user = serializer.save()
-        if (not self.request.user.is_authenticated
-                or not self.request.user.is_admin()):
+        user_not_authenticated = not self.request.user.is_authenticated
+        user_not_admin = not self.request.user.is_admin()
+
+        if user_not_authenticated or user_not_admin:
             self.send_confirmation_code(user)
 
 
