@@ -1,7 +1,8 @@
 import re
-
 from rest_framework import serializers
+
 from titles.models import Category, Genre, Title
+from reviews.models import Review, Comment
 from users.models import User
 
 
@@ -92,3 +93,27 @@ class TitlePostPatchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Title
         fields = '__all__'
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    """Сериализатор для отзыва."""
+    author = serializers.SlugRelatedField(
+        slug_field='username',
+        read_only=True
+    )
+
+    class Meta:
+        exclude = ('title',)
+        model = Review
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    """Сериализатор для комментария."""
+    author = serializers.SlugRelatedField(
+        slug_field='username',
+        read_only=True
+    )
+
+    class Meta:
+        exclude = ('review',)
+        model = Comment
