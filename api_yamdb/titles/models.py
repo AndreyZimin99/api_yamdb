@@ -47,8 +47,8 @@ class Title(models.Model):
     def __str__(self):
         return self.name
     
-    def average_rating(self):
-        reviews = self.reviews.all()
-        if reviews.exists():
-            return reviews.aggregate(models.Avg('score'))['score__avg']
-        return 0
+    # def average_rating(self):
+    #     reviews = self.reviews.all()
+    #     if reviews.exists():
+    #         return reviews.aggregate(models.Avg('score'))['score__avg']
+    #     return 0

@@ -2,9 +2,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
-from django.core.exceptions import PermissionDenied
-from http import HTTPStatus
-from rest_framework import permissions, status, views, viewsets, mixins
+from rest_framework import status, views, viewsets, mixins
 from rest_framework import status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -15,7 +13,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from api_yamdb.settings import PAGE_SIZE
 from users.models import User
 from api.filters import TitleFilters
-from .permissions import IsAdminOrReadOnly, IsAdmin, IsAuthorOrReadOnly, ReadOnly
+from .permissions import (IsAdminOrReadOnly, IsAdmin, IsAuthorOrReadOnly,
+                          ReadOnly)
 from titles.models import Category, Genre, Title
 from reviews.models import Review
 from .serializers import (SignupSerializer, TokenSerializer, UserSerializer,
@@ -139,14 +138,14 @@ class TitleViewSet(viewsets.ModelViewSet):
         if self.action in ('create', 'update', 'partial_update'):
             return TitlePostPatchSerializer
         return TitleGetSerializer
-    
-    def get(self, request, *args, **kwargs):
-        title = self.get_object()
-        serializer = self.get_serializer(title)
-        average_rating = title.average_rating()
-        response_data = serializer.data
-        response_data['rating'] = average_rating
-        return Response(response_data)
+
+    # def get(self, request, *args, **kwargs):
+    #     title = self.get_object()
+    #     serializer = self.get_serializer(title)
+    #     average_rating = title.average_rating()
+    #     response_data = serializer.data
+    #     response_data['rating'] = average_rating
+    #     return Response(response_data)
 
 
 class BaseViewSet(viewsets.ModelViewSet):
