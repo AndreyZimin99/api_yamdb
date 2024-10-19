@@ -133,7 +133,7 @@ class UserViewSet(EmailConfirmationMixin, viewsets.ModelViewSet):
 
         if request.method == 'DELETE':
             return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-    
+
     def perform_create(self, serializer):
         user = serializer.save()
         user_not_authenticated = not self.request.user.is_authenticated
@@ -184,12 +184,14 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 
 class BaseViewSet(viewsets.ModelViewSet):
+    """Базовый вьюсет для отзывов и комментариев."""
     pagination_class = PageNumberPagination
     pagination_class.page_size = PAGE_SIZE
     permission_classes = (IsAuthorOrReadOnly,)
     http_method_names = ["patch", "get", "post", "delete"]
 
     def get_permissions(self):
+        """Доступ к отдельному объекту при GET-запросе."""
         if self.action == 'retrieve':
             return (ReadOnly(),)
         return super().get_permissions()
@@ -200,6 +202,7 @@ class ReviewViewSet(BaseViewSet):
     serializer_class = ReviewSerializer
 
     def get_queryset(self):
+        """Получение списка отзывов."""
         title = get_object_or_404(Title, id=self.kwargs['title_id'])
         return title.reviews.all()
 
@@ -219,6 +222,7 @@ class CommentViewSet(BaseViewSet):
     serializer_class = CommentSerializer
 
     def get_queryset(self):
+        """Получение списка комментариев."""
         review = get_object_or_404(
             Review,
             title=self.kwargs['title_id'],

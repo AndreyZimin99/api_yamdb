@@ -96,6 +96,7 @@ class TitlePostPatchSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    """Сериализатор для отзыва."""
     author = serializers.SlugRelatedField(
         slug_field='username',
         read_only=True
@@ -107,6 +108,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    """Сериализатор для комментария."""
     author = serializers.SlugRelatedField(
         slug_field='username',
         read_only=True
