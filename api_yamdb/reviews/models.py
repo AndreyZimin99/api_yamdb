@@ -28,7 +28,7 @@ class Review(models.Model):
         unique_together = ('title', 'author')
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
-        ordering = ['pub_date']
+        ordering = ['-pub_date']
 
     def __str__(self):
         return f'{self.text}, {self.title}, {self.author}'
@@ -57,7 +57,7 @@ class Comment(models.Model):
         default_related_name = 'comments'
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
-        ordering = ['pub_date']
+        ordering = ['-pub_date']
 
     def __str__(self):
         return f'{self.text}, {self.review}, {self.author}'
