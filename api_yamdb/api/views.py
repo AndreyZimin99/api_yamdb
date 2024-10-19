@@ -25,32 +25,27 @@ from .serializers import (CategorySerializer, CommentSerializer,
                           TokenSerializer, UserSerializer)
 
 
-class SignupView(EmailConfirmationMixin, views.APIView):
+class SignupViewSet(EmailConfirmationMixin, views.APIView):
     """Класс для регистрации пользователя."""
 
     def post(self, request):
         """Обрабатывает регистрацию."""
         serializer = SignupSerializer(data=request.data)
-
         if not serializer.is_valid():
-            return Response(serializer.errors,
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
         email = serializer.validated_data['email']
         username = serializer.validated_data['username']
 
-        existing_user = User.objects.filter(email=email).first()
-
-        if existing_user and existing_user.username != username:
+        if self._is_email_taken(email, username):
             return Response(
                 {'email': 'Пользователь с такой почтой уже существует'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        user, created = User.objects.get_or_create(
-            username=username,
-            defaults={'email': email}
-        )
+        user, created = self._get_or_create_user(username, email)
 
         if not created and user.email != email:
             return Response(
@@ -60,15 +55,30 @@ class SignupView(EmailConfirmationMixin, views.APIView):
 
         self.send_confirmation_code(user)
 
+        return self._prepare_response(created, serializer)
+
+    def _is_email_taken(self, email, username):
+        """Проверяет, занят ли email другим пользователем."""
+        existing_user = User.objects.filter(email=email).first()
+        return existing_user and existing_user.username != username
+
+    def _get_or_create_user(self, username, email):
+        """Cоздает нового пользователя или получает существующего"""
+        return User.objects.get_or_create(
+            username=username,
+            defaults={'email': email}
+        )
+
+    def _prepare_response(self, created, serializer):
+        """Ответ в зависимости от того, был ли создан новый пользователь."""
         response_data = (
             serializer.data if created else
             {'message': 'Код подтверждения отправлен повторно'}
         )
-
         return Response(response_data, status=status.HTTP_200_OK)
 
 
-class TokenView(views.APIView):
+class TokenViewSet(views.APIView):
     """Класс для получения токена."""
 
     def post(self, request):
@@ -78,14 +88,7 @@ class TokenView(views.APIView):
 
         username = serializer.validated_data['username']
         confirmation_code = serializer.validated_data['confirmation_code']
-
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            return Response(
-                {'error': 'Пользователь не найден'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        user = get_object_or_404(User, username=username)
 
         if default_token_generator.check_token(user, confirmation_code):
             refresh = RefreshToken.for_user(user)
