@@ -10,7 +10,7 @@ class EmailConfirmationMixin:
     """Миксин для отправки кода подтверждения на почту."""
     @staticmethod
     def send_confirmation_code(user):
-        """Отправляет подтверждение."""
+        """Формирует и отправляет подтверждение (confirmation_code)."""
         confirmation_code = default_token_generator.make_token(user)
         send_mail(
             CONFIRMATION_SUBJECT,
