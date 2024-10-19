@@ -1,6 +1,10 @@
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
+
 from users.models import User
-from titles.models import Category, Genre, Title, Comment, Review
+from titles.models import Category, Genre, Title
+from reviews.models import Review, Comment
+
 
 class UserSerializer(serializers.ModelSerializer):
     """Сериализатор пользователя."""
@@ -34,7 +38,8 @@ class TokenSerializer(serializers.Serializer):
     """Сериализатор для получения токена."""
     username = serializers.CharField(max_length=150)
     confirmation_code = serializers.CharField()
-    
+
+
 class CategorySerializer(serializers.ModelSerializer):
     """Сериализатор для получения категории."""
     class Meta:
@@ -84,9 +89,8 @@ class ReviewSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        exclude = ('title_id',)
+        exclude = ('title',)
         model = Review
-        read_only_fields = ('title_id',)
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -98,4 +102,3 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         exclude = ('review',)
         model = Comment
-        read_only_fields = ('title_id', 'review')
