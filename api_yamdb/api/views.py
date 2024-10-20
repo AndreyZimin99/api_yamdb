@@ -17,12 +17,23 @@ from api_yamdb.settings import PAGE_SIZE
 
 from .mixins import EmailConfirmationMixin
 from .pagination import UserPagination
-from .permissions import (IsAdmin, IsAdminOrReadOnly, IsAuthorOrReadOnly,
-                          ReadOnly)
-from .serializers import (CategorySerializer, CommentSerializer,
-                          GenreSeriallizer, ReviewSerializer, SignupSerializer,
-                          TitleGetSerializer, TitlePostPatchSerializer,
-                          TokenSerializer, UserSerializer)
+from .permissions import (
+    IsAdmin,
+    IsAdminOrReadOnly,
+    IsAuthorOrReadOnly,
+    ReadOnly,
+)
+from .serializers import (
+    CategorySerializer,
+    CommentSerializer,
+    GenreSeriallizer,
+    ReviewSerializer,
+    SignupSerializer,
+    TitleGetSerializer,
+    TitlePostPatchSerializer,
+    TokenSerializer,
+    UserSerializer,
+)
 
 
 class SignupViewSet(EmailConfirmationMixin, views.APIView):
@@ -140,7 +151,7 @@ class UserViewSet(EmailConfirmationMixin, viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user = serializer.save()
         user_not_authenticated = not self.request.user.is_authenticated
-        user_not_admin = not self.request.user.is_admin()
+        user_not_admin = not self.request.user.is_admin
 
         if user_not_authenticated or user_not_admin:
             self.send_confirmation_code(user)
