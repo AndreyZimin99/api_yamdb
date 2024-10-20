@@ -8,6 +8,7 @@ SENDER_EMAIL = 'noreply@yamdb.com'
 
 class EmailConfirmationMixin:
     """Миксин для отправки кода подтверждения на почту."""
+
     @staticmethod
     def send_confirmation_code(user):
         """Формирует и отправляет подтверждение (confirmation_code)."""
