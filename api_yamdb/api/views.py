@@ -42,7 +42,7 @@ class SignupViewSet(EmailConfirmationMixin, views.APIView):
         if self._is_email_taken(email, username):
             return Response(
                 {'email': 'Пользователь с такой почтой уже существует'},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         user, created = self._get_or_create_user(username, email)
@@ -50,7 +50,7 @@ class SignupViewSet(EmailConfirmationMixin, views.APIView):
         if not created and user.email != email:
             return Response(
                 {'username': 'Пользователь с таким ником уже существует'},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         self.send_confirmation_code(user)
@@ -65,15 +65,15 @@ class SignupViewSet(EmailConfirmationMixin, views.APIView):
     def _get_or_create_user(self, username, email):
         """Cоздает нового пользователя или получает существующего"""
         return User.objects.get_or_create(
-            username=username,
-            defaults={'email': email}
+            username=username, defaults={'email': email}
         )
 
     def _prepare_response(self, created, serializer):
         """Ответ в зависимости от того, был ли создан новый пользователь."""
         response_data = (
-            serializer.data if created else
-            {'message': 'Код подтверждения отправлен повторно'}
+            serializer.data
+            if created
+            else {'message': 'Код подтверждения отправлен повторно'}
         )
         return Response(response_data, status=status.HTTP_200_OK)
 
@@ -93,13 +93,12 @@ class TokenViewSet(views.APIView):
         if default_token_generator.check_token(user, confirmation_code):
             refresh = RefreshToken.for_user(user)
             return Response(
-                {'token': str(refresh.access_token)},
-                status=status.HTTP_200_OK
+                {'token': str(refresh.access_token)}, status=status.HTTP_200_OK
             )
 
         return Response(
             {'error': 'Неверный код подтверждения'},
-            status=status.HTTP_400_BAD_REQUEST
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
 
