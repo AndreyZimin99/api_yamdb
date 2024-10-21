@@ -172,7 +172,7 @@ class GenreViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
     """Получение списка всех жанров"""
     queryset = Genre.objects.all()
     serializer_class = GenreSeriallizer
-    permissions_class = [IsAdminOrReadOnly]
+    permission_classes = [IsAdminOrReadOnly]
     search_fields = ['name']
     lookup_field = 'slug'
 
@@ -180,7 +180,7 @@ class GenreViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
 class TitleViewSet(viewsets.ModelViewSet):
     """Получение списка всех произведений"""
     queryset = Title.objects.all()
-    permissions_class = [IsAdminOrReadOnly]
+    permission_classes = [IsAdminOrReadOnly]
     filterset_class = TitleFilters
 
     def get_serializer_class(self):
