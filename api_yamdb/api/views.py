@@ -16,8 +16,7 @@ from titles.models import Category, Genre, Title
 from users.models import User
 from .mixins import EmailConfirmationMixin
 from .pagination import UserPagination
-from .permissions import (IsAdminOrReadOnly, IsAdmin, IsAuthorOrReadOnly,
-                          ReadOnly)
+from .permissions import IsAdminOrReadOnly, IsAdmin, IsAuthorOrReadOnly
 from .serializers import (SignupSerializer, TokenSerializer, UserSerializer,
                           CategorySerializer, GenreSeriallizer,
                           TitleGetSerializer, TitlePostPatchSerializer,
@@ -193,7 +192,7 @@ class BaseViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         """Доступ к отдельному объекту при GET-запросе."""
         if self.action == 'retrieve':
-            return (ReadOnly(),)
+            return (IsAdminOrReadOnly(),)
         return super().get_permissions()
 
 

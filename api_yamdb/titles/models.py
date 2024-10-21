@@ -46,7 +46,7 @@ class Title(models.Model):
 
     def __str__(self):
         return self.name
-    
+
     # def average_rating(self):
     #     reviews = self.reviews.all()
     #     if reviews.exists():
