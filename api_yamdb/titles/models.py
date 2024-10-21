@@ -27,7 +27,7 @@ class Genre(models.Model):
 
     def __str__(self):
         return self.name
-
+    
 
 class Title(models.Model):
     name = models.CharField('Имя произведения', max_length=256)
@@ -52,3 +52,16 @@ class Title(models.Model):
     #     if reviews.exists():
     #         return reviews.aggregate(models.Avg('score'))['score__avg']
     #     return 0
+
+
+class GenreTitle(models.Model):
+    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
+    title = models.ForeignKey(Title, on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = 'Название жанра'
+        verbose_name_plural = 'Названия жанров'
+        ordering = ['id']
+
+    def __str__(self):
+        return str(self.id)
