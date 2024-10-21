@@ -1,3 +1,4 @@
+from api.filters import TitleFilters
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
 from rest_framework import mixins, status, views, viewsets
@@ -8,66 +9,87 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-
-from api.filters import TitleFilters
-from api_yamdb.settings import PAGE_SIZE
 from reviews.models import Review
 from titles.models import Category, Genre, Title
 from users.models import User
+
+from api_yamdb.settings import PAGE_SIZE
+
 from .mixins import EmailConfirmationMixin
 from .pagination import UserPagination
-from .permissions import (IsAdminOrReadOnly, IsAdmin, IsAuthorOrReadOnly,
-                          ReadOnly)
-from .serializers import (SignupSerializer, TokenSerializer, UserSerializer,
-                          CategorySerializer, GenreSeriallizer,
-                          TitleGetSerializer, TitlePostPatchSerializer,
-                          CommentSerializer, ReviewSerializer)
+from .permissions import (
+    IsAdmin,
+    IsAdminOrReadOnly,
+    IsAuthorOrReadOnly,
+    ReadOnly,
+)
+from .serializers import (
+    CategorySerializer,
+    CommentSerializer,
+    GenreSeriallizer,
+    ReviewSerializer,
+    SignupSerializer,
+    TitleGetSerializer,
+    TitlePostPatchSerializer,
+    TokenSerializer,
+    UserSerializer,
+)
 
 
-class SignupView(EmailConfirmationMixin, views.APIView):
+class SignupViewSet(EmailConfirmationMixin, views.APIView):
     """Класс для регистрации пользователя."""
 
     def post(self, request):
         """Обрабатывает регистрацию."""
         serializer = SignupSerializer(data=request.data)
-
         if not serializer.is_valid():
-            return Response(serializer.errors,
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
         email = serializer.validated_data['email']
         username = serializer.validated_data['username']
 
-        existing_user = User.objects.filter(email=email).first()
-
-        if existing_user and existing_user.username != username:
+        if self._is_email_taken(email, username):
             return Response(
                 {'email': 'Пользователь с такой почтой уже существует'},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        user, created = User.objects.get_or_create(
-            username=username,
-            defaults={'email': email}
-        )
+        user, created = self._get_or_create_user(username, email)
 
         if not created and user.email != email:
             return Response(
                 {'username': 'Пользователь с таким ником уже существует'},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         self.send_confirmation_code(user)
 
-        response_data = (
-            serializer.data if created else
-            {'message': 'Код подтверждения отправлен повторно'}
+        return self._prepare_response(created, serializer)
+
+    def _is_email_taken(self, email, username):
+        """Проверяет, занят ли email другим пользователем."""
+        existing_user = User.objects.filter(email=email).first()
+        return existing_user and existing_user.username != username
+
+    def _get_or_create_user(self, username, email):
+        """Cоздает нового пользователя или получает существующего"""
+        return User.objects.get_or_create(
+            username=username, defaults={'email': email}
         )
 
+    def _prepare_response(self, created, serializer):
+        """Ответ в зависимости от того, был ли создан новый пользователь."""
+        response_data = (
+            serializer.data
+            if created
+            else {'message': 'Код подтверждения отправлен повторно'}
+        )
         return Response(response_data, status=status.HTTP_200_OK)
 
 
-class TokenView(views.APIView):
+class TokenViewSet(views.APIView):
     """Класс для получения токена."""
 
     def post(self, request):
@@ -77,25 +99,17 @@ class TokenView(views.APIView):
 
         username = serializer.validated_data['username']
         confirmation_code = serializer.validated_data['confirmation_code']
-
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            return Response(
-                {'error': 'Пользователь не найден'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        user = get_object_or_404(User, username=username)
 
         if default_token_generator.check_token(user, confirmation_code):
             refresh = RefreshToken.for_user(user)
             return Response(
-                {'token': str(refresh.access_token)},
-                status=status.HTTP_200_OK
+                {'token': str(refresh.access_token)}, status=status.HTTP_200_OK
             )
 
         return Response(
             {'error': 'Неверный код подтверждения'},
-            status=status.HTTP_400_BAD_REQUEST
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
 
@@ -137,7 +151,7 @@ class UserViewSet(EmailConfirmationMixin, viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user = serializer.save()
         user_not_authenticated = not self.request.user.is_authenticated
-        user_not_admin = not self.request.user.is_admin()
+        user_not_admin = not self.request.user.is_admin
 
         if user_not_authenticated or user_not_admin:
             self.send_confirmation_code(user)
