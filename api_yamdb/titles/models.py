@@ -5,7 +5,7 @@ from .validators import valid_date
 
 class Category(models.Model):
     name = models.CharField('Категория', max_length=50)
-    slug = models.SlugField('Слаг', unique=True, max_length=256)
+    slug = models.SlugField('Слаг', unique=True, max_length=50)
 
     class Meta:
         verbose_name = 'Категория'
@@ -18,7 +18,7 @@ class Category(models.Model):
 
 class Genre(models.Model):
     name = models.CharField('Жанр', max_length=50)
-    slug = models.SlugField('Слаг', unique=True, max_length=256)
+    slug = models.SlugField('Слаг', unique=True, max_length=50)
 
     class Meta:
         verbose_name = 'Жанр'
@@ -27,7 +27,7 @@ class Genre(models.Model):
 
     def __str__(self):
         return self.name
-    
+
 
 class Title(models.Model):
     name = models.CharField('Имя произведения', max_length=256)
