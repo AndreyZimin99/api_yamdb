@@ -2,6 +2,7 @@ from api.filters import TitleFilters
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
 from rest_framework import mixins, status, views, viewsets
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import SearchFilter
@@ -26,7 +27,7 @@ from .permissions import (
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
-    GenreSeriallizer,
+    GenreSerializer,
     ReviewSerializer,
     SignupSerializer,
     TitleGetSerializer,
@@ -158,30 +159,40 @@ class UserViewSet(EmailConfirmationMixin, viewsets.ModelViewSet):
 
 
 class CategoryViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
-                      viewsets.GenericViewSet):
+                      mixins.DestroyModelMixin, viewsets.GenericViewSet):
     """Получение списка всех категорий"""
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
+    pagination_class = PageNumberPagination
+    filter_backends = (DjangoFilterBackend, SearchFilter)
     search_fields = ['name']
     lookup_field = 'slug'
 
 
 class GenreViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
-                   viewsets.GenericViewSet):
+                   mixins.DestroyModelMixin, viewsets.GenericViewSet):
     """Получение списка всех жанров"""
     queryset = Genre.objects.all()
-    serializer_class = GenreSeriallizer
+    serializer_class = GenreSerializer
     permission_classes = [IsAdminOrReadOnly]
+    pagination_class = PageNumberPagination
+    filter_backends = (DjangoFilterBackend, SearchFilter)
     search_fields = ['name']
     lookup_field = 'slug'
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     """Получение списка всех произведений"""
-    queryset = Title.objects.all()
     permission_classes = [IsAdminOrReadOnly]
+    filter_backends = (DjangoFilterBackend, SearchFilter)
     filterset_class = TitleFilters
+    pagination_class = PageNumberPagination
+    http_method_names = ['get', 'post', 'delete', 'patch']
+
+    def get_queryset(self):
+        return Title.objects.all().select_related('category').prefetch_related(
+            'genre')
 
     def get_serializer_class(self):
         if self.action in ('create', 'update', 'partial_update'):

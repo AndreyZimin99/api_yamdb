@@ -1,5 +1,6 @@
 import re
 from rest_framework import serializers
+from django.db.models import Avg
 
 from titles.models import Category, Genre, Title
 from reviews.models import Review, Comment
@@ -57,25 +58,31 @@ class CategorySerializer(serializers.ModelSerializer):
     """Сериализатор для получения категории."""
     class Meta:
         model = Category
-        fields = '__all__'
+        fields = ('name', 'slug')
 
 
-class GenreSeriallizer(serializers.ModelSerializer):
+class GenreSerializer(serializers.ModelSerializer):
     """Сериализатор для получения жанров."""
     class Meta:
         model = Genre
-        fields = '__all__'
+        lookup_field = 'slug'
+        fields = ('name', 'slug')
 
 
 class TitleGetSerializer(serializers.ModelSerializer):
     """Сериализатор для получения списка произведений."""
     category = CategorySerializer(read_only=True)
-    genre = GenreSeriallizer(read_only=True)
-    raiting = serializers.IntegerField(read_only=True)
+    genre = GenreSerializer(read_only=True, many=True)
+    rating = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Title
         fields = '__all__'
+
+    def get_rating(self, obj):
+        average_rating = obj.reviews.aggregate(rating=Avg('score'))
+        return (average_rating['rating'] if average_rating['rating'] is not
+                None else None)
 
 
 class TitlePostPatchSerializer(serializers.ModelSerializer):
