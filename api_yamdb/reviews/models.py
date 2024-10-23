@@ -11,7 +11,6 @@ class Review(models.Model):
         Title,
         on_delete=models.CASCADE,
         verbose_name='Произведение',
-        related_name='reviews',
     )
     text = models.TextField('Текст отзыва')
     author = models.ForeignKey(

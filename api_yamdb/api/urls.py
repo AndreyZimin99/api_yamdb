@@ -12,14 +12,14 @@ from .views import (
     UserViewSet,
 )
 
-router = DefaultRouter()
+router_v1 = DefaultRouter()
 router2_v1 = DefaultRouter()
 router3_v1 = DefaultRouter()
 
-router.register(r'users', UserViewSet, basename='users')
-router.register(r'categories', CategoryViewSet, basename='categories')
-router.register(r'genres', GenreViewSet, basename='genres')
-router.register(r'titles', TitleViewSet, basename='titles')
+router_v1.register(r'users', UserViewSet, basename='users')
+router_v1.register(r'categories', CategoryViewSet, basename='categories')
+router_v1.register(r'genres', GenreViewSet, basename='genres')
+router_v1.register(r'titles', TitleViewSet, basename='titles')
 router2_v1.register(r'reviews', ReviewViewSet, basename='reviews')
 router3_v1.register(r'comments', CommentViewSet, basename='comments')
 
@@ -32,7 +32,7 @@ urlpatterns = [
         UserViewSet.as_view({'get': 'me', 'patch': 'me', 'delete': 'me'}),
         name='user-me',
     ),
-    path('', include(router.urls)),
+    path('', include(router_v1.urls)),
     path('titles/<int:title_id>/', include(router2_v1.urls)),
     path(
         'titles/<int:title_id>/reviews/<int:review_id>/',

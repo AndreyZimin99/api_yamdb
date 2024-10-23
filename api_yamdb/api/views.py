@@ -213,14 +213,6 @@ class TitleViewSet(viewsets.ModelViewSet):
             return TitlePostPatchSerializer
         return TitleGetSerializer
 
-    # def get(self, request, *args, **kwargs):
-    #     title = self.get_object()
-    #     serializer = self.get_serializer(title)
-    #     average_rating = title.average_rating()
-    #     response_data = serializer.data
-    #     response_data['rating'] = average_rating
-    #     return Response(response_data)
-
 
 class BaseViewSet(viewsets.ModelViewSet):
     """Базовый вьюсет для отзывов и комментариев."""
