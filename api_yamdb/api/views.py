@@ -1,8 +1,8 @@
 from api.filters import TitleFilters
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
-from rest_framework import mixins, status, views, viewsets
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import mixins, status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import SearchFilter
@@ -158,9 +158,14 @@ class UserViewSet(EmailConfirmationMixin, viewsets.ModelViewSet):
             self.send_confirmation_code(user)
 
 
-class CategoryViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
-                      mixins.DestroyModelMixin, viewsets.GenericViewSet):
+class CategoryViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
     """Получение списка всех категорий"""
+
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
@@ -170,9 +175,14 @@ class CategoryViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
     lookup_field = 'slug'
 
 
-class GenreViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
-                   mixins.DestroyModelMixin, viewsets.GenericViewSet):
+class GenreViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
     """Получение списка всех жанров"""
+
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = [IsAdminOrReadOnly]
@@ -184,6 +194,7 @@ class GenreViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
 
 class TitleViewSet(viewsets.ModelViewSet):
     """Получение списка всех произведений"""
+
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = (DjangoFilterBackend, SearchFilter)
     filterset_class = TitleFilters
@@ -191,8 +202,11 @@ class TitleViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'delete', 'patch']
 
     def get_queryset(self):
-        return Title.objects.all().select_related('category').prefetch_related(
-            'genre')
+        return (
+            Title.objects.all()
+            .select_related('category')
+            .prefetch_related('genre')
+        )
 
     def get_serializer_class(self):
         if self.action in ('create', 'update', 'partial_update'):
@@ -210,6 +224,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 class BaseViewSet(viewsets.ModelViewSet):
     """Базовый вьюсет для отзывов и комментариев."""
+
     pagination_class = PageNumberPagination
     pagination_class.page_size = PAGE_SIZE
     permission_classes = (IsAuthorOrReadOnly,)
@@ -224,6 +239,7 @@ class BaseViewSet(viewsets.ModelViewSet):
 
 class ReviewViewSet(BaseViewSet):
     """Класс для отзыва."""
+
     serializer_class = ReviewSerializer
 
     def get_queryset(self):
@@ -233,8 +249,7 @@ class ReviewViewSet(BaseViewSet):
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, id=self.kwargs['title_id'])
-        review = Review.objects.filter(title=title,
-                                       author=self.request.user)
+        review = Review.objects.filter(title=title, author=self.request.user)
         if review:
             raise ValidationError(
                 'Вы уже отправляли отзыв на это произведение.'
@@ -244,6 +259,7 @@ class ReviewViewSet(BaseViewSet):
 
 class CommentViewSet(BaseViewSet):
     """Класс для комментария."""
+
     serializer_class = CommentSerializer
 
     def get_queryset(self):
