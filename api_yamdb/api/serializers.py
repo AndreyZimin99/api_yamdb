@@ -1,7 +1,7 @@
 import re
 
-from django.db.models import Avg
 from rest_framework import serializers
+
 from reviews.models import Comment, Review
 from titles.models import Category, Genre, Title
 from users.models import User
@@ -95,12 +95,7 @@ class TitleGetSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_rating(self, obj):
-        average_rating = obj.reviews.aggregate(rating=Avg('score'))
-        return (
-            average_rating['rating']
-            if average_rating['rating'] is not None
-            else None
-        )
+        return obj.rating
 
 
 class TitlePostPatchSerializer(serializers.ModelSerializer):

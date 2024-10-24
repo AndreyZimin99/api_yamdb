@@ -13,6 +13,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Review
 from titles.models import Category, Genre, Title
 from users.models import User
+from django.db.models import Avg
 
 from api_yamdb.settings import PAGE_SIZE
 
@@ -206,6 +207,7 @@ class TitleViewSet(viewsets.ModelViewSet):
             Title.objects.all()
             .select_related('category')
             .prefetch_related('genre')
+            .annotate(rating=Avg('reviews__score'))
         )
 
     def get_serializer_class(self):
