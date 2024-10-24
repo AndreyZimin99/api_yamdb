@@ -31,7 +31,8 @@ class Genre(models.Model):
 
 class Title(models.Model):
     name = models.CharField('Имя произведения', max_length=256)
-    year = models.SmallIntegerField('Год выпуска', validators=[valid_date])
+    year = models.PositiveSmallIntegerField('Год выпуска',
+                                            validators=[valid_date])
     description = models.CharField('Описание', max_length=256)
     genre = models.ManyToManyField(
         Genre, related_name='titles', verbose_name='Жанр'
