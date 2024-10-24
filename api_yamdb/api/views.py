@@ -1,6 +1,7 @@
 from api.filters import TitleFilters
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -17,11 +18,22 @@ from api_yamdb.settings import PAGE_SIZE
 
 from .mixins import EmailConfirmationMixin
 from .pagination import UserPagination
-from .permissions import IsAdmin, IsAdminOrReadOnly, IsAuthorOrReadOnly
-from .serializers import (SignupSerializer, TokenSerializer, UserSerializer,
-                          CategorySerializer, GenreSeriallizer,
-                          TitleGetSerializer, TitlePostPatchSerializer,
-                          CommentSerializer, ReviewSerializer)
+from .permissions import (
+    IsAdmin,
+    IsAdminOrReadOnly,
+    IsAuthorOrReadOnly
+)
+from .serializers import (
+    CategorySerializer,
+    CommentSerializer,
+    GenreSeriallizer,
+    ReviewSerializer,
+    SignupSerializer,
+    TitleGetSerializer,
+    TitlePostPatchSerializer,
+    TokenSerializer,
+    UserSerializer,
+)
 
 
 class SignupViewSet(EmailConfirmationMixin, views.APIView):
@@ -145,48 +157,65 @@ class UserViewSet(EmailConfirmationMixin, viewsets.ModelViewSet):
             self.send_confirmation_code(user)
 
 
-class CategoryViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
-                      viewsets.GenericViewSet):
+class CategoryViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
     """Получение списка всех категорий"""
+
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
+    pagination_class = PageNumberPagination
+    filter_backends = (DjangoFilterBackend, SearchFilter)
     search_fields = ['name']
     lookup_field = 'slug'
 
 
-class GenreViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
-                   viewsets.GenericViewSet):
+class GenreViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
     """Получение списка всех жанров"""
+
     queryset = Genre.objects.all()
-    serializer_class = GenreSeriallizer
+    serializer_class = GenreSerializer
     permission_classes = [IsAdminOrReadOnly]
+    pagination_class = PageNumberPagination
+    filter_backends = (DjangoFilterBackend, SearchFilter)
     search_fields = ['name']
     lookup_field = 'slug'
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     """Получение списка всех произведений"""
-    queryset = Title.objects.all()
+
     permission_classes = [IsAdminOrReadOnly]
+    filter_backends = (DjangoFilterBackend, SearchFilter)
     filterset_class = TitleFilters
+    pagination_class = PageNumberPagination
+    http_method_names = ['get', 'post', 'delete', 'patch']
+
+    def get_queryset(self):
+        return (
+            Title.objects.all()
+            .select_related('category')
+            .prefetch_related('genre')
+        )
 
     def get_serializer_class(self):
         if self.action in ('create', 'update', 'partial_update'):
             return TitlePostPatchSerializer
         return TitleGetSerializer
 
-    # def get(self, request, *args, **kwargs):
-    #     title = self.get_object()
-    #     serializer = self.get_serializer(title)
-    #     average_rating = title.average_rating()
-    #     response_data = serializer.data
-    #     response_data['rating'] = average_rating
-    #     return Response(response_data)
-
 
 class BaseViewSet(viewsets.ModelViewSet):
     """Базовый вьюсет для отзывов и комментариев."""
+
     pagination_class = PageNumberPagination
     pagination_class.page_size = PAGE_SIZE
     permission_classes = (IsAuthorOrReadOnly,)
@@ -201,6 +230,7 @@ class BaseViewSet(viewsets.ModelViewSet):
 
 class ReviewViewSet(BaseViewSet):
     """Класс для отзыва."""
+
     serializer_class = ReviewSerializer
 
     def get_queryset(self):
@@ -210,8 +240,7 @@ class ReviewViewSet(BaseViewSet):
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, id=self.kwargs['title_id'])
-        review = Review.objects.filter(title=title,
-                                       author=self.request.user)
+        review = Review.objects.filter(title=title, author=self.request.user)
         if review:
             raise ValidationError(
                 'Вы уже отправляли отзыв на это произведение.'
@@ -221,6 +250,7 @@ class ReviewViewSet(BaseViewSet):
 
 class CommentViewSet(BaseViewSet):
     """Класс для комментария."""
+
     serializer_class = CommentSerializer
 
     def get_queryset(self):

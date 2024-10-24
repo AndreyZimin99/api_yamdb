@@ -1,11 +1,11 @@
 from django.db import models
-
-from users.models import User
 from titles.models import Title
+from users.models import User
 
 
 class Review(models.Model):
-    """"Модель отзыва."""
+    """ "Модель отзыва."""
+
     SCORE_CHOICES = [(i, str(i)) for i in range(1, 11)]
     title = models.ForeignKey(
         Title,
@@ -20,7 +20,8 @@ class Review(models.Model):
     )
     score = models.IntegerField('Рейтинг', choices=SCORE_CHOICES)
     pub_date = models.DateTimeField(
-        'Дата публикации отзыва', auto_now_add=True,
+        'Дата публикации отзыва',
+        auto_now_add=True,
     )
 
     class Meta:
@@ -35,7 +36,8 @@ class Review(models.Model):
 
 
 class Comment(models.Model):
-    """"Модель комментария к отзыву."""
+    """ "Модель комментария к отзыву."""
+
     text = models.TextField('Текст комментария')
     author = models.ForeignKey(
         User,
@@ -48,9 +50,7 @@ class Comment(models.Model):
         verbose_name='Отзыв',
     )
     pub_date = models.DateTimeField(
-        'Дата добавления комментария',
-        auto_now_add=True,
-        db_index=True
+        'Дата добавления комментария', auto_now_add=True, db_index=True
     )
 
     class Meta:
