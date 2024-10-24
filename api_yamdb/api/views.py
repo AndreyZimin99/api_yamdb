@@ -14,6 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Review
 from titles.models import Category, Genre, Title
 from users.models import User
+
 from api_yamdb.settings import PAGE_SIZE
 from api.filters import TitleFilters
 from .mixins import EmailConfirmationMixin
@@ -64,7 +65,13 @@ class SignupViewSet(EmailConfirmationMixin, views.APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        self.send_confirmation_code(user)
+        try:
+            self.send_confirmation_code(user)
+        except Exception:
+            return Response(
+                {'error': 'Ошибка при отправке кода подтверждения'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         return self._prepare_response(created, serializer)
 
@@ -205,6 +212,7 @@ class TitleViewSet(viewsets.ModelViewSet):
             Title.objects.all()
             .select_related('category')
             .prefetch_related('genre')
+            .annotate(rating=Avg('reviews__score'))
         )
 
     def get_serializer_class(self):
