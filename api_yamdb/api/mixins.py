@@ -1,9 +1,9 @@
+from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 
 CONFIRMATION_SUBJECT = 'Код подтверждения'
 CONFIRMATION_MESSAGE = 'Ваш код подтверждения: {}'
-SENDER_EMAIL = 'noreply@yamdb.com'
 
 
 class EmailConfirmationMixin:
@@ -16,7 +16,7 @@ class EmailConfirmationMixin:
         send_mail(
             CONFIRMATION_SUBJECT,
             CONFIRMATION_MESSAGE.format(confirmation_code),
-            SENDER_EMAIL,
+            settings.SENDER_EMAIL,
             [user.email],
             fail_silently=False,
         )

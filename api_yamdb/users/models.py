@@ -4,16 +4,22 @@ from django.db import models
 
 
 class User(AbstractUser):
+    USER = 'user'
+    MODERATOR = 'moderator'
+    ADMIN = 'admin'
+
+    ROLES = [
+        (USER, 'User'),
+        (MODERATOR, 'Moderator'),
+        (ADMIN, 'Admin'),
+    ]
+
     email = models.EmailField(unique=True)
     bio = models.TextField(blank=True, null=True)
     role = models.CharField(
         max_length=20,
-        choices=[
-            ('user', 'User'),
-            ('moderator', 'Moderator'),
-            ('admin', 'Admin'),
-        ],
-        default='user',
+        choices=ROLES,
+        default=USER,
     )
     username = models.CharField(
         max_length=150,
@@ -21,5 +27,10 @@ class User(AbstractUser):
         validators=[validators.RegexValidator(r'^[\w.@+-]+$')],
     )
 
+    @property
     def is_admin(self):
-        return self.role == 'admin' or self.is_staff or self.is_superuser
+        return self.role == self.ADMIN or self.is_staff or self.is_superuser
+
+    @property
+    def is_moderator(self):
+        return self.role == self.MODERATOR
