@@ -2,9 +2,7 @@ from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
-
 from django_filters.rest_framework import DjangoFilterBackend
-
 from rest_framework import mixins, status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -12,15 +10,12 @@ from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from api.filters import TitleFilters
 from reviews.models import Review
 from titles.models import Category, Genre, Title
 from users.models import User
-
-from api.filters import TitleFilters
-
 from .mixins import EmailConfirmationMixin
 from .pagination import UserPagination
 from .permissions import IsAdmin, IsAdminOrReadOnly, IsAuthorOrReadOnly
