@@ -66,7 +66,13 @@ class SignupViewSet(EmailConfirmationMixin, views.APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        self.send_confirmation_code(user)
+        try:
+            self.send_confirmation_code(user)
+        except Exception:
+            return Response(
+                {'error': 'Ошибка при отправке кода подтверждения'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         return self._prepare_response(created, serializer)
 
