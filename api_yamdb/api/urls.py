@@ -13,15 +13,13 @@ from .views import (
 )
 
 router_v1 = DefaultRouter()
-router2_v1 = DefaultRouter()
-router3_v1 = DefaultRouter()
 
-router_v1.register(r'users', UserViewSet, basename='users')
-router_v1.register(r'categories', CategoryViewSet, basename='categories')
-router_v1.register(r'genres', GenreViewSet, basename='genres')
-router_v1.register(r'titles', TitleViewSet, basename='titles')
-router2_v1.register(r'reviews', ReviewViewSet, basename='reviews')
-router3_v1.register(r'comments', CommentViewSet, basename='comments')
+router_v1.register('users', UserViewSet, basename='users')
+router_v1.register('categories', CategoryViewSet, basename='categories')
+router_v1.register('genres', GenreViewSet, basename='genres')
+router_v1.register('titles', TitleViewSet, basename='titles')
+router_v1.register('reviews', ReviewViewSet, basename='reviews')
+router_v1.register('comments', CommentViewSet, basename='comments')
 
 
 urlpatterns = [
@@ -33,9 +31,9 @@ urlpatterns = [
         name='user-me',
     ),
     path('', include(router_v1.urls)),
-    path('titles/<int:title_id>/', include(router2_v1.urls)),
+    path('titles/<int:title_id>/', include(router_v1.urls)),
     path(
         'titles/<int:title_id>/reviews/<int:review_id>/',
-        include(router3_v1.urls),
+        include(router_v1.urls),
     ),
 ]

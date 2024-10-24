@@ -1,5 +1,5 @@
-from api.filters import TitleFilters
 from django.contrib.auth.tokens import default_token_generator
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, status, views, viewsets
@@ -10,12 +10,12 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+
 from reviews.models import Review
 from titles.models import Category, Genre, Title
 from users.models import User
-
 from api_yamdb.settings import PAGE_SIZE
-
+from api.filters import TitleFilters
 from .mixins import EmailConfirmationMixin
 from .pagination import UserPagination
 from .permissions import (
@@ -26,7 +26,7 @@ from .permissions import (
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
-    GenreSeriallizer,
+    GenreSerializer,
     ReviewSerializer,
     SignupSerializer,
     TitleGetSerializer,
@@ -219,13 +219,21 @@ class BaseViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPagination
     pagination_class.page_size = PAGE_SIZE
     permission_classes = (IsAuthorOrReadOnly,)
-    http_method_names = ["patch", "get", "post", "delete"]
+    http_method_names = ['patch', 'get', 'post', 'delete']
 
     def get_permissions(self):
         """Доступ к отдельному объекту при GET-запросе."""
         if self.action == 'retrieve':
             return (IsAdminOrReadOnly(),)
         return super().get_permissions()
+
+
+def get_review(self):
+    return get_object_or_404(
+        Review,
+        title=self.kwargs['title_id'],
+        id=self.kwargs['review_id'],
+    )
 
 
 class ReviewViewSet(BaseViewSet):
@@ -255,17 +263,9 @@ class CommentViewSet(BaseViewSet):
 
     def get_queryset(self):
         """Получение списка комментариев."""
-        review = get_object_or_404(
-            Review,
-            title=self.kwargs['title_id'],
-            id=self.kwargs['review_id'],
-        )
+        review = get_review(self)
         return review.comments.all()
 
     def perform_create(self, serializer):
-        review = get_object_or_404(
-            Review,
-            title=self.kwargs['title_id'],
-            id=self.kwargs['review_id'],
-        )
+        review = get_review(self)
         serializer.save(author=self.request.user, review=review)

@@ -4,7 +4,7 @@ from users.models import User
 
 
 class Review(models.Model):
-    """ "Модель отзыва."""
+    """Модель отзыва."""
 
     SCORE_CHOICES = [(i, str(i)) for i in range(1, 11)]
     title = models.ForeignKey(
@@ -26,17 +26,22 @@ class Review(models.Model):
 
     class Meta:
         default_related_name = 'reviews'
-        unique_together = ('title', 'author')
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         ordering = ['-pub_date']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['title', 'author'],
+                name='unique_review'
+            )
+        ]
 
     def __str__(self):
         return f'{self.text}, {self.title}, {self.author}'
 
 
 class Comment(models.Model):
-    """ "Модель комментария к отзыву."""
+    """Модель комментария к отзыву."""
 
     text = models.TextField('Текст комментария')
     author = models.ForeignKey(
