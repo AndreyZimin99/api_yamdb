@@ -109,7 +109,8 @@ STATIC_URL = '/static/'
 
 STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
 
+SENDER_EMAIL = 'noreply@yamdb.com'
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
 
-PAGE_SIZE = 10
+POST_PER_PAGE = 10

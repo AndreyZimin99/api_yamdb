@@ -1,7 +1,10 @@
+from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
+
 from django_filters.rest_framework import DjangoFilterBackend
+
 from rest_framework import mixins, status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -9,21 +12,18 @@ from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from reviews.models import Review
 from titles.models import Category, Genre, Title
 from users.models import User
 
-from api_yamdb.settings import PAGE_SIZE
 from api.filters import TitleFilters
+
 from .mixins import EmailConfirmationMixin
 from .pagination import UserPagination
-from .permissions import (
-    IsAdmin,
-    IsAdminOrReadOnly,
-    IsAuthorOrReadOnly
-)
+from .permissions import IsAdmin, IsAdminOrReadOnly, IsAuthorOrReadOnly
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
@@ -43,10 +43,7 @@ class SignupViewSet(EmailConfirmationMixin, views.APIView):
     def post(self, request):
         """Обрабатывает регистрацию."""
         serializer = SignupSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer.is_valid(raise_exception=True)
 
         email = serializer.validated_data['email']
         username = serializer.validated_data['username']
@@ -225,7 +222,7 @@ class BaseViewSet(viewsets.ModelViewSet):
     """Базовый вьюсет для отзывов и комментариев."""
 
     pagination_class = PageNumberPagination
-    pagination_class.page_size = PAGE_SIZE
+    pagination_class.page_size = settings.POST_PER_PAGE
     permission_classes = (IsAuthorOrReadOnly,)
     http_method_names = ['patch', 'get', 'post', 'delete']
 
